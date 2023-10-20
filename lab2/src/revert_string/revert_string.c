@@ -1,7 +1,15 @@
-#include "revert_string.h"
-
 void RevertString(char *str)
 {
-	// your code here
+	char *start = str;
+	char *end = str + strlen(str) - 1;
+
+	while (start < end)
+	{
+		char temp = *start;
+		*start = *end;
+		*end = temp;
+		start++;
+		end--;
+	}
 }
 
