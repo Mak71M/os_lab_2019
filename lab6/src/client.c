@@ -99,13 +99,35 @@ int main(int argc, char **argv) {
   }
 
   // TODO: for one server here, rewrite with servers from file
-  unsigned int servers_num = 1;
-  struct Server *to = malloc(sizeof(struct Server) * servers_num);
+  FILE *file = fopen(servers, "r");
+  if(file == NULL){
+    perror("Unable to open servers file");
+    return 1;
+  }
+  unsigned int servers_num = 0;
+  struct Server *to = NULL;
+  char line[255];
+  while(fgets(line, sizeof(line), file)){
+    char *ip = strtok(line, ":");
+    char *port_str = strtok(NULL, "\n");
+    if (ip != NULL && port_str != NULL){
+      to = realloc(to, (servers_num + 1) * sizeof(struct Server));
+      strcpy(to[servers_num].ip, ip);
+      to[servers_num].port = atoi(port_str);
+      servers_num++;
+    }
+  }
+  fclose(file);
+  //struct Server *to = malloc(sizeof(struct Server) * servers_num);
+  
   // TODO: delete this and parallel work between servers
+  
   to[0].port = 20001;
   memcpy(to[0].ip, "127.0.0.1", sizeof("127.0.0.1"));
 
   // TODO: work continiously, rewrite to make parallel
+  uint64_t result = 1;
+  
   for (int i = 0; i < servers_num; i++) {
     struct hostent *hostname = gethostbyname(to[i].ip);
     if (hostname == NULL) {
@@ -123,17 +145,14 @@ int main(int argc, char **argv) {
       fprintf(stderr, "Socket creation failed!\n");
       exit(1);
     }
-
+    
     if (connect(sck, (struct sockaddr *)&server, sizeof(server)) < 0) {
       fprintf(stderr, "Connection failed\n");
       exit(1);
     }
-
-    // TODO: for one server
-    // parallel between servers
-    uint64_t begin = 1;
-    uint64_t end = k;
-
+    uint64_t begin = (k / servers_num) * i + 1;
+    uint64_t end = (servers_num == servers_num - 1) ? k : (k / servers_num) * (i + 1);
+    printf("For %d server:\nbegin is %ld\n end is %ld\n",i,begin, end);
     char task[sizeof(uint64_t) * 3];
     memcpy(task, &begin, sizeof(uint64_t));
     memcpy(task + sizeof(uint64_t), &end, sizeof(uint64_t));
@@ -154,11 +173,11 @@ int main(int argc, char **argv) {
     // unite results
     uint64_t answer = 0;
     memcpy(&answer, response, sizeof(uint64_t));
+    result *= answer;
     printf("answer: %llu\n", answer);
-
     close(sck);
   }
   free(to);
-
+  printf("The result is: %ld \n", result % mod);
   return 0;
 }
