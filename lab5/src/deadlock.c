@@ -14,6 +14,7 @@ void *thread1_function(void *arg) {
     // Работа с ресурсами
 
     pthread_mutex_unlock(&mutex2);
+
     pthread_mutex_unlock(&mutex1);
     return NULL;
 }
